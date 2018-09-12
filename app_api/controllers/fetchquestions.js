@@ -82,3 +82,19 @@ chapter: { $addToSet: "$chapter" }  }}  ]
 })
 
 }
+
+
+module.exports.searchQuestions = function(req ,res){
+  var book_id = req.params.book_id;
+  var regex = new RegExp(req.params.key,'i');
+    question
+    .find({$and : [{"book_id":book_id},{'question' : regex}]})
+    .limit(5)
+    .exec(function(err, question) {
+      if (err) {
+           res.send({status:'failure', message:err, data:[]});
+          } else {
+            console.log(question.length);
+           res.send({status:'success', message:'Questions Found', data:question})
+          }
+    })}

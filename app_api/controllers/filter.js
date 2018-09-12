@@ -2,6 +2,8 @@ var mongoose = require('mongoose');
 var question = mongoose.model('combine_problems');
 
 module.exports.chapterNames = function (req,res){
+  var page_num = parseInt(req.params.page_num);
+  let skip  = page_num*5;
   let book_id = req.params.book_id;
      let chapter = ">"
      let type = req.params.type;
@@ -19,6 +21,7 @@ module.exports.chapterNames = function (req,res){
   question
   .find({$and: query})
   .limit(5)
+  .skip(skip)
   .exec(function(err,quest){
     if (err) {
          res.send({status:'failure', message:err, data:[]});
