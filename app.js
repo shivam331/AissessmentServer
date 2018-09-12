@@ -43,8 +43,8 @@ app.use(function(err, req, res, next) {
   res.send('error');
 });
 
-// app.get('*',function(err,res){
-//   res.send('index.html')
-// })
+app.get('*',function(err,res){
+  res.send('index.html')
+})
 
 module.exports = app;
