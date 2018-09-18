@@ -70,7 +70,8 @@ question
     [ { $match : {"book_id":book_id} },
 {$project : {chapter : { $arrayElemAt: [  { $split: ["$crumb", ">"] },1]}}},
 { $group : { _id : null,
-chapter: { $addToSet: "$chapter" }  }}  ]
+chapter: { $addToSet: "$chapter" }  }},
+  ]
   )
   .exec(function(err,type){
     if (err) {
