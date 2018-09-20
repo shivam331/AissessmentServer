@@ -1,10 +1,10 @@
 var mongoose = require( 'mongoose' );
-var dbURI = 'mongodb://heroku_9xn39r0q:lcsq0nk22hm3f4gihoc5ss0ct4@ds153700.mlab.com:53700/heroku_9xn39r0q';
+// var dbURI = 'mongodb://heroku_9xn39r0q:lcsq0nk22hm3f4gihoc5ss0ct4@ds153700.mlab.com:53700/heroku_9xn39r0q';
+var dbURI = 'mongodb://lukeskywalker:lukeskywalker123@ds263112-a0.mlab.com:63112,ds263112-a1.mlab.com:63112/heroku_9xn39r0q?replicaSet=rs-ds263112';
 mongoose.connect(dbURI, {auto_reconnect:true, useNewUrlParser: true });
 
 
 mongoose.connection.on('connected', function () {
-
   console.log('Mongoose connected to ' + dbURI);
 });
 mongoose.connection.on('error',function (err) {
@@ -43,3 +43,4 @@ process.on('SIGTERM', function() {
 
 // this here to require schema
 require('./QuestionSchema');
+require('./AccountSchema')

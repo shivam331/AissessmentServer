@@ -88,14 +88,55 @@ chapter: { $addToSet: "$chapter" }  }},
 module.exports.searchQuestions = function(req ,res){
   var book_id = req.params.book_id;
   var regex = new RegExp(req.params.key,'i');
-    question
-    .find({$and : [{"book_id":book_id},{'question' : regex}]})
-    .limit(5)
-    .exec(function(err, question) {
-      if (err) {
-           res.send({status:'failure', message:err, data:[]});
-          } else {
-            console.log(question.length);
-           res.send({status:'success', message:'Questions Found', data:question})
+  console.log(book_id);
+
+  question
+  .aggregate(
+    [
+      { $match : {$and: [{"book_id":book_id},{'question' : regex}]} },
+      {
+        $group:{
+          _id : '$sen.line',
+          questions_list: { $push:  {
+            _id : "$_id",
+            question: "$question",
+            random_rank:"$random_rank",
+            choices:"$choices",
+            answer:"$answer" } }
           }
-    })}
+        },
+        { $sort : { random_rank: 1 } },
+
+        { $limit : 50 },
+
+      ]
+    )
+    .exec(function(err,quest){
+      if (err) {
+        res.send({status:'failure', message:err, data:[]});
+      }
+      else{
+        res.send({status:'success', message:'Questions Found', data:quest})
+      }
+    })
+
+
+
+
+
+
+
+
+    // question
+    // .find({$and : [{"book_id":book_id},{'question' : regex}]})
+    // .limit(5)
+    // .exec(function(err, question) {
+    //   if (err) {
+    //        res.send({status:'failure', message:err, data:[]});
+    //       } else {
+    //         console.log(question.length);
+    //        res.send({status:'success', message:'Questions Found', data:question})
+    //       }
+    // })
+
+  }

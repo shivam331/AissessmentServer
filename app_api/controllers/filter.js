@@ -1,5 +1,6 @@
 var mongoose = require('mongoose');
 var question = mongoose.model('combine_problems');
+var blacklists =mongoose.model('blacklists')
 
 module.exports.QuestionList = function (req,res){
   var page_num = parseInt(req.params.page_num);
@@ -81,3 +82,38 @@ module.exports.versioning = function(req,res){
       }
     })
   }
+
+
+
+module.exports.bookList = function(req,res){
+  question
+  .aggregate(
+  [ {$project : {bookName : { $arrayElemAt: [  { $split: ["$crumb", ">"] },0]},
+book_id: "$book_id"}},
+  { $group : { _id : "$book_id",
+  bookname:{ $first: "$bookName" }   }}  ]
+    )
+    .exec(function(err,bookName){
+      if (err) {
+           res.send({status:'failure', message:err, data:[]});
+          }
+          else{
+              res.send({status:'success', message:'Book List Found', data:bookName})
+          }
+  })
+
+}
+
+module.exports.distractors = function(req,res){
+  blacklists
+  .find()
+  .exec(function(err,distractors){
+    if (err) {
+      res.send({status:'failure', message:err, data:[]});
+    }
+    else{
+      res.send({status:'success', message:'Questions Found', data:distractors})
+    }
+  })
+
+}
