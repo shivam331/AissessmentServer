@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');
 var question = mongoose.model('combine_problems');
-
+var blacklists =mongoose.model('blacklists')
 
 var sendJsonResponse = function(res, status, content) {
  res.status(status);
@@ -47,30 +47,56 @@ question
       }
 })
 }
+ function blacklisted(){
 
+   var a = blacklists.find().exec();
+   return a;
+}
 module.exports.questionTypes = function(req, res){
+
   var  book_id = req.params.book_id;
-  question
-  .find({"book_id":book_id})
-  .distinct("type")
-  .exec(function(err,type){
-    if (err) {
-         res.send({status:'failure', message:err, data:[]});
-        }
-        else{
-            res.send({status:'success', message:'Question Types Found', data:type})
-        }
-})}
+  blacklisted().then(function(distractors){
+    let myJSON = JSON.stringify(distractors[0]);
+    let myobj = JSON.parse(myJSON);
+
+    question
+    .find({$and:[ {"book_id":book_id},{ type: { $nin: myobj.ProblemType} } ]})
+    .distinct("type")
+    .exec(function(err,type){
+      if (err) {
+           res.send({status:'failure', message:err, data:[]});
+          }
+          else{
+              res.send({status:'success', message:'Question Types Found', data:type})
+          }
+  })
+  })
+
+
+
+}
 
 
 module.exports.chapters = function(req, res){
   var  book_id = req.params.book_id;
+  blacklisted().then(function(distractors){
+    let myJSON = JSON.stringify(distractors[0]);
+    let myobj = JSON.parse(myJSON).Chapter;
 question
 .aggregate(
     [ { $match : {"book_id":book_id} },
 {$project : {chapter : { $arrayElemAt: [  { $split: ["$crumb", ">"] },1]}}},
 { $group : { _id : null,
 chapter: { $addToSet: "$chapter" }  }},
+{$project: {
+        chapter: {
+           $filter: {
+              input: "$chapter",
+              as: "item",
+              cond:{ $not:[ { $in: [  "$$item", myobj ] }]}
+           }
+        }
+     }}
   ]
   )
   .exec(function(err,type){
@@ -82,7 +108,7 @@ chapter: { $addToSet: "$chapter" }  }},
         }
 })
 
-}
+})}
 
 
 module.exports.searchQuestions = function(req ,res){
@@ -120,23 +146,5 @@ module.exports.searchQuestions = function(req ,res){
       }
     })
 
-
-
-
-
-
-
-
-    // question
-    // .find({$and : [{"book_id":book_id},{'question' : regex}]})
-    // .limit(5)
-    // .exec(function(err, question) {
-    //   if (err) {
-    //        res.send({status:'failure', message:err, data:[]});
-    //       } else {
-    //         console.log(question.length);
-    //        res.send({status:'success', message:'Questions Found', data:question})
-    //       }
-    // })
 
   }

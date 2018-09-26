@@ -34,6 +34,12 @@ module.exports.QuestionList = function (req,res){
   })
 }
 
+function blacklisted(){
+
+  var a = blacklists.find().exec();
+  return a;
+}
+
 module.exports.versioning = function(req,res){
   var page_num = parseInt(req.params.page_num);
   let skip  = page_num*5;
@@ -49,12 +55,19 @@ module.exports.versioning = function(req,res){
 
   if(type !== "All Question Types")
   {
-    query.push({"type" : new RegExp(type)});
+    query.push({"type" : type});
   }
+
+  blacklisted().then(function(distractors){
+    let myJSON = JSON.stringify(distractors[0]);
+    let myobj = JSON.parse(myJSON).Choices;
+
   question
+  // .find({$and:[{ "book_id": book_id},{"type" : "Example"}]})
   .aggregate(
     [
       { $match : {$and: query} },
+      {$sort :{type: 1}},
       {
         $group:{
           _id : '$sen.line',
@@ -62,12 +75,18 @@ module.exports.versioning = function(req,res){
             _id : "$_id",
             question: "$question",
             random_rank:"$random_rank",
-            choices:"$choices",
+            type:"$type",
+            choices:{
+               $filter: {
+                  input: "$choices",
+                  as: "item",
+                  cond:{ $not:[ { $in: [  "$$item", myobj ] }]}
+               }
+            },
             answer:"$answer" } }
           }
         },
         { $skip : skip },
-        { $sort : { random_rank: 1 } },
 
         { $limit : 50 },
 
@@ -78,9 +97,10 @@ module.exports.versioning = function(req,res){
         res.send({status:'failure', message:err, data:[]});
       }
       else{
-        res.send({status:'success', message:'Questions Found', data:quest})
+        res.send({status:'success', message:'Questions Found', data:quest, blacklist :distractors[0]})
       }
     })
+  })
   }
 
 
@@ -115,5 +135,71 @@ module.exports.distractors = function(req,res){
       res.send({status:'success', message:'Questions Found', data:distractors})
     }
   })
+
+}
+
+module.exports.blacklistDistractors = function(req,res){
+  var distractors = req.body.distractor;
+  console.log(distractors);
+
+  blacklists
+  .updateOne(
+    {},
+    { $pull: { Choices: { $in: ["force","change"] } }},
+    { multi: true }
+)
+  // .updateOne({},{$addToSet: { Choices: distractors } } )
+  .exec(function(err,bookName){
+    if (err) {
+         res.send({status:'failure', message:err, data:[]});
+        }
+        else{
+            res.send({status:'success', message:'Added to blacklist', data:bookName})
+        }
+})
+}
+
+
+module.exports.updateDistractors = function(req,res)
+{
+let from = req.body.from
+let to = req.body.to
+console.log("blacklists",blacklists);
+console.log(from + " " + to);
+try{
+  blacklists
+  // .remove({"_id":"5ba9e2ad718baa29e8079764"})
+.updateOne({"Editing.from":from},
+    { "Editing.$":[{from:from,to:to}] })
+.exec(function(err,modified){
+  if (err) {
+       res.send({status:'failure', message:err, data:[]});
+      }
+      else{
+        let myJSON = JSON.stringify(modified);
+        let myobj = JSON.parse(myJSON);
+        if(myobj.n == 0){
+          blacklists
+          .updateOne({},
+          {$push:{Editing : {from:from,to:to}}})
+          .exec(function(err,pushed){
+            if(err){
+              res.send({status:'failure', message:err, data:[]});
+            }
+            else{
+              res.send({status:'success', message:'Distractor Editted Successfully', data:pushed})
+            }
+          })
+        }
+        else{
+          res.send({status:'success', message:'Distractor Editted Successfully', data:myobj.n})
+        }
+      }
+})
+;
+
+}catch(e){
+  console.log(e);
+}
 
 }

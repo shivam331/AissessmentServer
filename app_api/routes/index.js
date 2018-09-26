@@ -16,4 +16,6 @@ router.post('/createUser',account.registeruser);
 router.post('/login',account.login);
 router.get('/books',filterquestions.bookList);
 router.get('/blacklists',filterquestions.distractors);
+router.post('/addBlacklist',filterquestions.blacklistDistractors);
+router.post('/updateDistractors',filterquestions.updateDistractors)
 module.exports = router;
